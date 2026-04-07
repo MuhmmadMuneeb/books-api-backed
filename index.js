@@ -18,16 +18,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // --- Middleware ---
-
 const allowedOrigins = ["http://localhost:5173", "https://your-frontend.vercel.app"];
-
 app.use(cors({
   origin: function(origin, callback) {
-   
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
-      return callback(new Error(msg), false);
+      return callback(new Error("CORS policy does not allow access from this origin."), false);
     }
     return callback(null, true);
   },
@@ -36,28 +32,36 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // note path adjustment
 
+// Remove or comment this line for now, filesystem is read-only in serverless
+// app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); 
+
+// --- Routes ---
 app.use("/api/students", userRouter);
-
 app.use(autherization);
 app.use("/api/books", booksRouter);
 
-
-await connectDB(); // await works in serverless functions
-
-// --- Error handling ---
+// --- Error Handling ---
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    if (err.code === "LIMIT_UNEXPECTED_FILE") {
-      return res.status(400).send("Error: too many files uploaded");
-    }
+    if (err.code === "LIMIT_UNEXPECTED_FILE") return res.status(400).send("Too many files uploaded");
     return res.status(400).send(`${err.message} ${err.code}`);
   }
-  if (err) {
-    return res.status(500).send(`${err.message}`);
-  }
+  if (err) return res.status(500).send(`${err.message}`);
 });
 
-// --- Export as serverless function ---
-export const handler = serverless(app);
+// --- Connect DB on-demand in serverless ---
+let isConnected = false;
+const connectDBOnce = async () => {
+  if (!isConnected) {
+    await connectDB();
+    isConnected = true;
+    console.log("Database connected");
+  }
+};
+
+// --- Wrap handler ---
+export const handler = serverless(async (req, res) => {
+  await connectDBOnce();
+  return app(req, res);
+});
