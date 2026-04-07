@@ -60,8 +60,8 @@ const connectDBOnce = async () => {
   }
 };
 
-// --- Wrap handler ---
-export const handler = serverless(async (req, res) => {
+
+export default serverless(async (req, res) => {
   await connectDBOnce();
   return app(req, res);
 });
