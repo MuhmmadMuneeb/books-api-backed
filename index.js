@@ -18,7 +18,22 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // --- Middleware ---
-app.use(cors());
+
+const allowedOrigins = ["http://localhost:5173", "https://your-frontend.vercel.app"];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // allow requests with no origin (like Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // note path adjustment
