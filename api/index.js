@@ -18,7 +18,7 @@ const app = express();
 // We removed app.options("(.*)") because it was causing your PathError crash.
 // The cors() middleware handles OPTIONS automatically.
 app.use(cors({
-  origin: "http://localhost:5173", 
+  origin: "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
@@ -50,7 +50,7 @@ const connectDBOnce = async () => {
 app.use(async (req, res, next) => {
   // Directly skip everything for preflight to avoid crashes/timeouts
   if (req.method === "OPTIONS") return res.sendStatus(200);
-  
+
   await connectDBOnce();
   next();
 });
@@ -58,6 +58,9 @@ app.use(async (req, res, next) => {
 // ====================
 // ✅ 4. ROUTES
 // ====================
+app.get("/", (req, res) => {
+  res.json("this is home page")
+})
 app.use("/api/students", userRouter);
 
 // Protected routes
