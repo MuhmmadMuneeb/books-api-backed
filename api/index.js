@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import cors from "cors"; // 1. Added cors import
+import cors from "cors";
 import { booksRouter } from "../routes/booksApi.routes.js";
 import { userRouter } from "../routes/jwt.routes.js";
 import { autherization } from "../middleware/auth.js";
@@ -13,32 +13,31 @@ dotenv.config();
 const app = express();
 
 // ====================
-// ✅ CORS (USE PACKAGE)
+// ✅ 1. FIXED CORS SECTION
 // ====================
-// This handles preflight (OPTIONS) automatically and correctly for Vercel
 app.use(cors({
-  origin: "http://localhost:5173", // Be specific during testing
+  origin: "http://localhost:5173", // Exact frontend origin
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
 
-// Add this immediately after cors() to handle preflight manually if needed
-app.options("*", cors());
+// FIX: Changed "*" to "(.*)" to stop the PathError crash in your logs
+app.options("(.*)", cors());
 
 // ====================
-// ✅ BODY PARSING
+// ✅ 2. BODY PARSING
 // ====================
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ====================
-// ✅ DATABASE 
+// ✅ 3. DATABASE CONNECTION
 // ====================
 let isConnected = false;
 
 const connectDBOnce = async () => {
-  if (isConnected) return; // Quick exit if already connected
+  if (isConnected) return;
   try {
     await connectDB();
     isConnected = true;
@@ -48,39 +47,34 @@ const connectDBOnce = async () => {
   }
 };
 
-// Middleware to ensure DB is ready before any request
+// Middleware to skip DB on preflight to prevent timeouts
 app.use(async (req, res, next) => {
-  // Skip DB connection for preflight requests to speed up CORS checks
   if (req.method === "OPTIONS") return next();
-  
   await connectDBOnce();
   next();
 });
 
 // ====================
-// ✅ ROUTES
+// ✅ 4. FIXED ROUTES
 // ====================
-// Explicitly map your login/signup routes
-app.use("/", userRouter);
+// Mapping back to /api/students to match your Axios baseURL
+app.use("/api/students", userRouter);
 
 // Protected routes
 app.use(autherization);
 app.use("/api/books", booksRouter);
 
 // ====================
-// ✅ ERROR HANDLER
+// ✅ 5. ERROR HANDLER
 // ====================
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    if (err.code === "LIMIT_UNEXPECTED_FILE") {
-      return res.status(400).send("Too many files uploaded");
-    }
     return res.status(400).send(`${err.message} ${err.code}`);
   }
   return res.status(500).send(err.message || "Server Error");
 });
 
 // ====================
-// ✅ EXPORT
+// ✅ 6. EXPORT
 // ====================
 export default serverless(app);
