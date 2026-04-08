@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors"; // 1. Added cors import
 import { booksRouter } from "../routes/booksApi.routes.js";
 import { userRouter } from "../routes/jwt.routes.js";
 import { autherization } from "../middleware/auth.js";
@@ -11,22 +12,16 @@ dotenv.config();
 
 const app = express();
 
-
 // ====================
-// ✅ CORS (FIXED)
+// ✅ CORS (USE PACKAGE)
 // ====================
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  next();
-});
-
+// This handles preflight (OPTIONS) automatically and correctly for Vercel
+app.use(cors({
+  origin: "*", // Or your specific localhost:5173
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
 
 // ====================
 // ✅ BODY PARSING
@@ -34,35 +29,37 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-
 // ====================
-// ✅ DATABASE (IMPORTANT FIX)
+// ✅ DATABASE 
 // ====================
 let isConnected = false;
 
 const connectDBOnce = async () => {
-  if (!isConnected) {
+  if (isConnected) return; // Quick exit if already connected
+  try {
     await connectDB();
     isConnected = true;
     console.log("✅ Database connected");
+  } catch (err) {
+    console.error("❌ DB Connection Error:", err);
   }
 };
 
-// 🔥 attach DB connection BEFORE routes
+// Middleware to ensure DB is ready before any request
 app.use(async (req, res, next) => {
   await connectDBOnce();
   next();
 });
 
-
 // ====================
 // ✅ ROUTES
 // ====================
+// Explicitly map your login/signup routes
 app.use("/api/students", userRouter);
 
+// Protected routes
 app.use(autherization);
 app.use("/api/books", booksRouter);
-
 
 // ====================
 // ✅ ERROR HANDLER
@@ -74,12 +71,10 @@ app.use((err, req, res, next) => {
     }
     return res.status(400).send(`${err.message} ${err.code}`);
   }
-
   return res.status(500).send(err.message || "Server Error");
 });
 
-
 // ====================
-// ✅ EXPORT (FIXED0
+// ✅ EXPORT
 // ====================
 export default serverless(app);
