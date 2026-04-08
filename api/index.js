@@ -1,12 +1,11 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import mongoose from "mongoose"; 
+import mongoose from "mongoose";
 import { booksRouter } from "../routes/booksApi.routes.js";
 import { userRouter } from "../routes/jwt.routes.js";
 import { autherization } from "../middleware/auth.js";
 import multer from "multer";
-import serverless from "serverless-http";
 import { connectDB } from "../config/database.js";
 
 dotenv.config();
@@ -14,7 +13,7 @@ dotenv.config();
 const app = express();
 
 // ====================
-// ✅ 1. STABLE CORS
+// ✅ 1. CORS CONFIG (Strict & Stable)
 // ====================
 app.use(cors({
   origin: "http://localhost:5173",
@@ -24,24 +23,18 @@ app.use(cors({
 }));
 
 // ====================
-// 📁 2. MULTER CONFIGURATION
+// 📁 2. MULTER CONFIG
 // ====================
-// For Vercel, we use /tmp because the rest of the file system is read-only
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "/tmp"); 
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
+  destination: (req, file, cb) => cb(null, "/tmp"),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
 });
 const upload = multer({ storage });
 
 // ====================
-// ✅ 3. DATABASE & MIDDLEWARE
+// ✅ 3. DATABASE CONNECTION
 // ====================
 let isConnected = false;
-
 const connectDBOnce = async () => {
   if (isConnected && mongoose.connection.readyState === 1) return;
   try {
@@ -53,28 +46,26 @@ const connectDBOnce = async () => {
   }
 };
 
-// Preflight and DB check MUST come before Body Parsing
+// Handle Preflight & DB Connection
 app.use(async (req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(200);
   await connectDBOnce();
   next();
 });
 
-// ✅ FIX: Move body parsers AFTER the DB middleware to prevent "BadRequestError"
+// ✅ BODY PARSING (Placed after DB to avoid BadRequestError)
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ====================
 // ✅ 4. ROUTES
 // ====================
-app.get("/", (req, res) => {
-  res.json("This is the API home page");
-});
+app.get("/", (req, res) => res.json("API is Active"));
 
 // Auth Routes
 app.use("/api/students", userRouter);
 
-// Protected Routes (Example using the upload middleware if needed)
+// Protected Routes
 app.use("/api/books", autherization, booksRouter);
 
 // ====================
@@ -86,8 +77,7 @@ app.use((err, req, res, next) => {
 });
 
 // ====================
-// ✅ 6. EXPORT
+// ✅ 6. EXPORT (Vercel Native)
 // ====================
-// If serverless-http continues to give "BadRequestError", 
-// you can try: export default app;
-export default serverless(app);
+// We removed serverless-http to stop the body-parsing conflicts
+export default app;
