@@ -17,7 +17,7 @@ const app = express();
 // ====================
 // This handles preflight (OPTIONS) automatically and correctly for Vercel
 app.use(cors({
-  origin: "*", // Or your specific localhost:5173
+  origin: true, // Dynamically allow the requesting origin (required for credentials)
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
