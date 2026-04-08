@@ -1,11 +1,11 @@
 import express from "express";
 import dotenv from "dotenv";
-import { booksRouter } from "./routes/booksApi.routes.js";
-import { userRouter } from "./routes/jwt.routes.js";
-import { autherization } from "./middleware/auth.js";
+import { booksRouter } from "../routes/booksApi.routes.js";
+import { userRouter } from "../routes/jwt.routes.js";
+import { autherization } from "../middleware/auth.js";
 import multer from "multer";
 import serverless from "serverless-http";
-import { connectDB } from "./config/database.js";
+import { connectDB } from "../config/database.js";
 
 dotenv.config();
 
