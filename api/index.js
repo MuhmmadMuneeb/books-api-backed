@@ -58,7 +58,7 @@ app.use(async (req, res, next) => {
 // ✅ ROUTES
 // ====================
 // Explicitly map your login/signup routes
-app.use("/api/students", userRouter);
+app.use("/", userRouter);
 
 // Protected routes
 app.use(autherization);
