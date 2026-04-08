@@ -28,16 +28,16 @@ userRouter.post("/login", async (req, res) => {
         const { username, password } = req.body
         const userExists = await User.findOne({ username })
         if (!userExists) {
-            return res.json({ message: "invalid username or username " })
+            return res.status(401).json({ message: "Invalid username or password" })
         }
         const isPasswordVallid = await bcrypt.compare(password, userExists.password)
         if (!isPasswordVallid) {
-            return res.json({ message: "invalid username or username " })
+            return res.status(401).json({ message: "Invalid username or password" })
         }
         const Token = jwt.sign({ userID: userExists._id, username: userExists.username }, process.env.SECRET_KEY, { expiresIn: "24h" })
 
-        res.json({ message: "login sucessfully", Token, username })
-       
+        res.json({ message: "login sucessfully", Token, username: userExists.username })
+
 
     } catch (error) {
         res.status(500).json({ message: error.message })
