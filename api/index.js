@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import mongoose from "mongoose"; // 👈 CRITICAL: Added missing import
+import mongoose from "mongoose"; 
 import { booksRouter } from "../routes/booksApi.routes.js";
 import { userRouter } from "../routes/jwt.routes.js";
 import { autherization } from "../middleware/auth.js";
@@ -24,18 +24,25 @@ app.use(cors({
 }));
 
 // ====================
-// ✅ 2. BODY PARSING
+// 📁 2. MULTER CONFIGURATION
 // ====================
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// For Vercel, we use /tmp because the rest of the file system is read-only
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "/tmp"); 
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+const upload = multer({ storage });
 
 // ====================
-// ✅ 3. DATABASE CONNECTION
+// ✅ 3. DATABASE & MIDDLEWARE
 // ====================
 let isConnected = false;
 
 const connectDBOnce = async () => {
-  // Now that mongoose is imported, this check will work
   if (isConnected && mongoose.connection.readyState === 1) return;
   try {
     await connectDB();
@@ -46,11 +53,16 @@ const connectDBOnce = async () => {
   }
 };
 
+// Preflight and DB check MUST come before Body Parsing
 app.use(async (req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(200);
   await connectDBOnce();
   next();
 });
+
+// ✅ FIX: Move body parsers AFTER the DB middleware to prevent "BadRequestError"
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // ====================
 // ✅ 4. ROUTES
@@ -59,8 +71,10 @@ app.get("/", (req, res) => {
   res.json("This is the API home page");
 });
 
-// Use /api prefix here to match your vercel.json rewrites perfectly
+// Auth Routes
 app.use("/api/students", userRouter);
+
+// Protected Routes (Example using the upload middleware if needed)
 app.use("/api/books", autherization, booksRouter);
 
 // ====================
@@ -74,4 +88,6 @@ app.use((err, req, res, next) => {
 // ====================
 // ✅ 6. EXPORT
 // ====================
+// If serverless-http continues to give "BadRequestError", 
+// you can try: export default app;
 export default serverless(app);
