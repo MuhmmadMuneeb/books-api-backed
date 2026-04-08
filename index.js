@@ -18,13 +18,18 @@ const app = express();
 // ====================
 
 // 🔥 FIXED CORS (allow all for now)
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-}));
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-// 🔥 IMPORTANT: handle preflight requests
-app.options("*", cors());
+  if (req.method === "OPTIONS") {
+    return res.status(200).end(); // 🔥 VERY IMPORTANT
+  }
+
+  next();
+});
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
