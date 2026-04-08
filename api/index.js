@@ -63,10 +63,10 @@ app.use(express.urlencoded({ extended: false }));
 app.get("/", (req, res) => res.json("API is Active"));
 
 // Auth Routes
-app.use("/api/students", userRouter);
+app.use("/students", userRouter);
 
 // Protected Routes
-app.use("/api/books", autherization, booksRouter);
+app.use("/books", autherization, booksRouter);
 
 // ====================
 // ✅ 5. ERROR HANDLER
