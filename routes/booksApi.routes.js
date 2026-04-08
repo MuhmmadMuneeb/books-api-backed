@@ -54,7 +54,7 @@ booksRouter.get("/:id", async (req, res) => {
     }
 })
 //adding books
-booksRouter.post("/", checkAdmin, uploads.single("bookImg"), async (req, res) => {
+booksRouter.post("/add", checkAdmin, uploads.single("bookImg"), async (req, res) => {
     try {
         const booksData = new booksSchema(req.body)
         if (req.file) {
