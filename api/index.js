@@ -47,6 +47,9 @@ const connectDBOnce = async () => {
 
 // Middleware to ensure DB is ready before any request
 app.use(async (req, res, next) => {
+  // Skip DB connection for preflight requests to speed up CORS checks
+  if (req.method === "OPTIONS") return next();
+  
   await connectDBOnce();
   next();
 });
