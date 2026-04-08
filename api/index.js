@@ -17,11 +17,14 @@ const app = express();
 // ====================
 // This handles preflight (OPTIONS) automatically and correctly for Vercel
 app.use(cors({
-  origin: true, // Dynamically allow the requesting origin (required for credentials)
+  origin: "http://localhost:5173", // Be specific during testing
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+
+// Add this immediately after cors() to handle preflight manually if needed
+app.options("*", cors());
 
 // ====================
 // ✅ BODY PARSING
