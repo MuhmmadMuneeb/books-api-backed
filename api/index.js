@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import mongoose from "mongoose"; // 👈 CRITICAL: Added missing import
 import { booksRouter } from "../routes/booksApi.routes.js";
 import { userRouter } from "../routes/jwt.routes.js";
 import { autherization } from "../middleware/auth.js";
@@ -13,10 +14,8 @@ dotenv.config();
 const app = express();
 
 // ====================
-// ✅ 1. STABLE CORS (CRASH-PROOF)
+// ✅ 1. STABLE CORS
 // ====================
-// We removed app.options("(.*)") because it was causing your PathError crash.
-// The cors() middleware handles OPTIONS automatically.
 app.use(cors({
   origin: "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -36,6 +35,7 @@ app.use(express.urlencoded({ extended: false }));
 let isConnected = false;
 
 const connectDBOnce = async () => {
+  // Now that mongoose is imported, this check will work
   if (isConnected && mongoose.connection.readyState === 1) return;
   try {
     await connectDB();
@@ -46,11 +46,8 @@ const connectDBOnce = async () => {
   }
 };
 
-// Middleware to ensure DB is ready
 app.use(async (req, res, next) => {
-  // Directly skip everything for preflight to avoid crashes/timeouts
   if (req.method === "OPTIONS") return res.sendStatus(200);
-
   await connectDBOnce();
   next();
 });
@@ -59,18 +56,18 @@ app.use(async (req, res, next) => {
 // ✅ 4. ROUTES
 // ====================
 app.get("/", (req, res) => {
-  res.json("this is home page")
-})
-app.use("/api/students", userRouter);
+  res.json("This is the API home page");
+});
 
-// Protected routes
-app.use(autherization);
-app.use("/api/books", booksRouter);
+// Use /api prefix here to match your vercel.json rewrites perfectly
+app.use("/api/students", userRouter);
+app.use("/api/books", autherization, booksRouter);
 
 // ====================
 // ✅ 5. ERROR HANDLER
 // ====================
 app.use((err, req, res, next) => {
+  console.error(err.stack);
   res.status(500).send(err.message || "Server Error");
 });
 
